@@ -16,3 +16,4 @@ yarn-error.log
 /.vscode
 /public/admin-dashboard/js/app.*.js
 /public/js/app.*.js*
+.env.production

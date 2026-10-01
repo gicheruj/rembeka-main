@@ -5554,16 +5554,28 @@ __webpack_require__.r(__webpack_exports__);
       currentUrl: null,
       errors: [],
       activeItem: {},
+      selectedVariant: null,
       formOrder: {
         pricing_id: null,
+        variant_id: null,
         color: null,
         quantity: 1,
         type: 1
       }
     };
   },
+  computed: {
+    hasColorVariants: function hasColorVariants() {
+      return (this.product.variant_type === 'color' || this.product.variants && this.product.variants.length > 0) && this.product.variants && this.product.variants.length > 0;
+    }
+  },
   created: function created() {
     this.activeItem = this.product.supplier_price[0];
+    if (this.hasColorVariants) {
+      this.selectedVariant = this.product.variants[0];
+      this.formOrder.variant_id = this.product.variants[0].id;
+      this.formOrder.color = this.product.variants[0].color;
+    }
   },
   mounted: function mounted() {
     this.currentUrl = encodeURI(window.location.href);
@@ -5572,6 +5584,12 @@ __webpack_require__.r(__webpack_exports__);
     handleAddToCart: function handleAddToCart() {
       var _this = this;
       this.formOrder.pricing_id = this.activeItem.id;
+      if (this.hasColorVariants) {
+        if (!this.formOrder.color || !this.formOrder.variant_id) {
+          this.$toast.error('Please choose a color');
+          return;
+        }
+      }
       this.$axios.post('/add-to-cart', this.formOrder).then(function (_ref) {
         var data = _ref.data;
         _this.$bus.$emit('cartUpdated', data.data);
@@ -5586,6 +5604,47 @@ __webpack_require__.r(__webpack_exports__);
     },
     handleSizeChange: function handleSizeChange(selectedIndex) {
       this.activeItem = this.product.supplier_price[selectedIndex];
+    },
+    handleVariantSelect: function handleVariantSelect(variant) {
+      this.selectedVariant = variant;
+      this.formOrder.variant_id = variant.id;
+      this.formOrder.color = variant.color;
+    },
+    getVariantDisplayType: function getVariantDisplayType(variant) {
+      var _variant$attributes, _variant$attributes$f, _variant$attributes$f2;
+      return (variant === null || variant === void 0 ? void 0 : (_variant$attributes = variant.attributes) === null || _variant$attributes === void 0 ? void 0 : (_variant$attributes$f = _variant$attributes.find) === null || _variant$attributes$f === void 0 ? void 0 : (_variant$attributes$f2 = _variant$attributes$f.call(_variant$attributes, function (attr) {
+        return attr.attribute === 'color';
+      })) === null || _variant$attributes$f2 === void 0 ? void 0 : _variant$attributes$f2.display_type) || 'pill';
+    },
+    getVariantHexCode: function getVariantHexCode(variant) {
+      var _variant$attributes2, _variant$attributes2$, _variant$attributes2$2;
+      return (variant === null || variant === void 0 ? void 0 : (_variant$attributes2 = variant.attributes) === null || _variant$attributes2 === void 0 ? void 0 : (_variant$attributes2$ = _variant$attributes2.find) === null || _variant$attributes2$ === void 0 ? void 0 : (_variant$attributes2$2 = _variant$attributes2$.call(_variant$attributes2, function (attr) {
+        return attr.attribute === 'color';
+      })) === null || _variant$attributes2$2 === void 0 ? void 0 : _variant$attributes2$2.hex_code) || null;
+    },
+    // Determines if a variant name is a known CSS color or a business code
+    isBusinessCode: function isBusinessCode(colorName) {
+      if (!colorName) return true;
+      var cssColors = ['red', 'blue', 'green', 'purple', 'wine', 'burgundy', 'yellow', 'black', 'white', 'orange', 'pink'];
+      return !cssColors.includes(colorName.toLowerCase());
+    },
+    // Check if variant has an associated color swatch from the product_color pivot
+    getVariantSwatchColor: function getVariantSwatchColor(variant) {
+      if (!this.product.colors || !variant) return null;
+      var matchingColor = this.product.colors.find(function (c) {
+        return c.name === variant.color;
+      });
+      if (matchingColor && matchingColor.display_type === 'swatch' && matchingColor.hex_code) {
+        return matchingColor.hex_code;
+      }
+      return null;
+    },
+    getVariantDisplayMode: function getVariantDisplayMode(variant) {
+      if (!this.product.colors || !variant) return 'pill';
+      var matchingColor = this.product.colors.find(function (c) {
+        return c.name === variant.color;
+      });
+      return (matchingColor === null || matchingColor === void 0 ? void 0 : matchingColor.display_type) || 'pill';
     }
   }
 });
@@ -6815,7 +6874,11 @@ var render = function render() {
       attrs: {
         href: "/product/".concat(item.product.slug, "/").concat(item.product.id)
       }
-    }, [_vm._v(_vm._s(item.product.name))])]), _vm._v(" "), item.type == 2 ? _c("div", [item.providerDetails ? _c("div", {
+    }, [_vm._v(_vm._s(item.product.name))])]), _vm._v(" "), item.color ? _c("div", {
+      staticClass: "fs-sm mb-1"
+    }, [_c("span", {
+      staticClass: "text-muted me-2"
+    }, [_vm._v("Color: " + _vm._s(item.color))])]) : _vm._e(), _vm._v(" "), item.type == 2 ? _c("div", [item.providerDetails ? _c("div", {
       staticClass: "fs-sm"
     }, [_c("span", {
       staticClass: "text-muted me-2"
@@ -7372,91 +7435,53 @@ var render = function render() {
     staticClass: "ci-heart fs-lg"
   })])])]), _vm._v(" "), _c("span", {
     staticClass: "text-danger fw-bold"
-  }, [_vm._v("Ksh " + _vm._s(_vm.activeItem.amount))]), _vm._v(" "), _c("p", [_vm._v(" Size: " + _vm._s(_vm.activeItem.size) + " " + _vm._s(_vm.activeItem.unit.name))]), _vm._v(" "), _vm._m(0), _vm._v(" "), _c("div", {
+  }, [_vm._v("Ksh " + _vm._s(_vm.activeItem.amount))]), _vm._v(" "), _c("p", [_vm._v(" Size: " + _vm._s(_vm.activeItem.size) + " " + _vm._s(_vm.activeItem.unit.name))]), _vm._v(" "), _vm.hasColorVariants ? _c("div", {
+    staticClass: "fs-sm mb-4"
+  }, [_c("span", {
+    staticClass: "text-heading fw-medium me-1"
+  }, [_vm._v("Choose Color:")]), _vm._v(" "), _c("span", {
+    staticClass: "text-muted",
+    attrs: {
+      id: "colorOption"
+    }
+  }, [_vm._v(_vm._s(_vm.selectedVariant ? _vm.selectedVariant.color : ""))])]) : _vm._e(), _vm._v(" "), _vm.hasColorVariants ? _c("div", {
     staticClass: "position-relative me-n4 mb-3"
-  }, [_vm.activeItem.config && _vm.activeItem.config.color ? [_c("div", {
-    staticClass: "form-check form-option form-check-inline mb-3"
-  }, [_c("input", {
-    directives: [{
-      name: "model",
-      rawName: "v-model",
-      value: _vm.formOrder.color,
-      expression: "formOrder.color"
-    }],
-    staticClass: "form-check-input",
-    attrs: {
-      type: "radio",
-      name: "color",
-      id: "color1",
-      "data-bs-label": "colorOption",
-      value: "Red/Dark blue/White",
-      checked: ""
-    },
-    domProps: {
-      checked: _vm._q(_vm.formOrder.color, "Red/Dark blue/White")
-    },
-    on: {
-      change: function change($event) {
-        return _vm.$set(_vm.formOrder, "color", "Red/Dark blue/White");
+  }, [_c("div", {
+    staticClass: "d-flex flex-wrap gap-2"
+  }, _vm._l(_vm.product.variants, function (variant, index) {
+    return _c("div", {
+      key: variant.id,
+      staticClass: "color-option",
+      "class": {
+        selected: _vm.selectedVariant && _vm.selectedVariant.id === variant.id
+      },
+      on: {
+        click: function click($event) {
+          return _vm.handleVariantSelect(variant);
+        }
       }
-    }
-  }), _vm._v(" "), _vm._m(1)]), _vm._v(" "), _c("div", {
-    staticClass: "form-check form-option form-check-inline mb-2"
-  }, [_c("input", {
-    directives: [{
-      name: "model",
-      rawName: "v-model",
-      value: _vm.formOrder.color,
-      expression: "formOrder.color"
-    }],
-    staticClass: "form-check-input",
-    attrs: {
-      type: "radio",
-      name: "color",
-      id: "color2",
-      "data-bs-label": "colorOption",
-      value: "Beige/White/Dark grey"
-    },
-    domProps: {
-      checked: _vm._q(_vm.formOrder.color, "Beige/White/Dark grey")
-    },
-    on: {
-      change: function change($event) {
-        return _vm.$set(_vm.formOrder, "color", "Beige/White/Dark grey");
+    }, [_vm.getVariantDisplayMode(variant) === "swatch" && _vm.getVariantSwatchColor(variant) ? [_c("div", {
+      staticClass: "color-swatch-circle",
+      style: {
+        backgroundColor: _vm.getVariantSwatchColor(variant)
       }
-    }
-  }), _vm._v(" "), _vm._m(2)]), _vm._v(" "), _c("div", {
-    staticClass: "form-check form-option form-check-inline mb-2"
-  }, [_c("input", {
-    directives: [{
-      name: "model",
-      rawName: "v-model",
-      value: _vm.formOrder.color,
-      expression: "formOrder.color"
-    }],
-    staticClass: "form-check-input",
-    attrs: {
-      type: "radio",
-      name: "color",
-      id: "color3",
-      "data-bs-label": "colorOption",
-      value: "Dark grey/White/Orange"
-    },
-    domProps: {
-      checked: _vm._q(_vm.formOrder.color, "Dark grey/White/Orange")
-    },
-    on: {
-      change: function change($event) {
-        return _vm.$set(_vm.formOrder, "color", "Dark grey/White/Orange");
+    }, [_vm.selectedVariant && _vm.selectedVariant.id === variant.id ? _c("i", {
+      staticClass: "ci-check text-white"
+    }) : _vm._e()])] : [_c("span", {
+      staticClass: "color-pill-label",
+      "class": {
+        selected: _vm.selectedVariant && _vm.selectedVariant.id === variant.id
       }
-    }
-  }), _vm._v(" "), _vm._m(3)])] : _vm._e()], 2), _vm._v(" "), _c("div", {
+    }, [_vm.selectedVariant && _vm.selectedVariant.id === variant.id ? _c("i", {
+      staticClass: "ci-check me-1"
+    }) : _vm._e(), _vm._v("\n            " + _vm._s(variant.color) + "\n          ")])]], 2);
+  }), 0)]) : _vm._e(), _vm._v(" "), _c("div", {
     staticClass: "row mb-4"
   }, [_c("div", {
     staticClass: "col-12 col-sm-6"
   }, [_c("div", {
     staticClass: "mb-3"
-  }, [_vm._m(4), _vm._v(" "), _c("select", {
+  }, [_vm._m(0), _vm._v(" "), _c("select", {
     staticClass: "form-select",
     attrs: {
       required: "",
@@ -7522,7 +7547,7 @@ var render = function render() {
     }
   }, [_c("i", {
     staticClass: "ci-cart fs-lg me-2"
-  }), _vm._v("\n          Add to Cart\n        ")])]), _vm._v(" "), _c("div", {
+  }), _vm._v("\n        Add to Cart\n      ")])]), _vm._v(" "), _c("div", {
     staticClass: "col-12 d-block d-sm-none"
   }, [_c("book-on-whats-app", {
     attrs: {
@@ -7531,61 +7556,6 @@ var render = function render() {
   })], 1)])]);
 };
 var staticRenderFns = [function () {
-  var _vm = this,
-    _c = _vm._self._c;
-  return _c("div", {
-    staticClass: "fs-sm mb-4"
-  }, [_c("span", {
-    staticClass: "text-heading fw-medium me-1"
-  }, [_vm._v("Color:")]), _c("span", {
-    staticClass: "text-muted",
-    attrs: {
-      id: "colorOption"
-    }
-  }, [_vm._v("Red/Dark blue/White")])]);
-}, function () {
-  var _vm = this,
-    _c = _vm._self._c;
-  return _c("label", {
-    staticClass: "form-option-label rounded-circle",
-    attrs: {
-      "for": "color1"
-    }
-  }, [_c("span", {
-    staticClass: "form-option-color rounded-circle",
-    staticStyle: {
-      "background-image": "url(img/shop/single/color-opt-1.png)"
-    }
-  })]);
-}, function () {
-  var _vm = this,
-    _c = _vm._self._c;
-  return _c("label", {
-    staticClass: "form-option-label rounded-circle",
-    attrs: {
-      "for": "color2"
-    }
-  }, [_c("span", {
-    staticClass: "form-option-color rounded-circle",
-    staticStyle: {
-      "background-image": "url(img/shop/single/color-opt-2.png)"
-    }
-  })]);
-}, function () {
-  var _vm = this,
-    _c = _vm._self._c;
-  return _c("label", {
-    staticClass: "form-option-label rounded-circle",
-    attrs: {
-      "for": "color3"
-    }
-  }, [_c("span", {
-    staticClass: "form-option-color rounded-circle",
-    staticStyle: {
-      "background-image": "url(img/shop/single/color-opt-3.png)"
-    }
-  })]);
-}, function () {
   var _vm = this,
     _c = _vm._self._c;
   return _c("div", {
@@ -21254,6 +21224,30 @@ __webpack_require__.r(__webpack_exports__);
 var ___CSS_LOADER_EXPORT___ = _node_modules_laravel_mix_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
 ___CSS_LOADER_EXPORT___.push([module.id, "\n.avatar[data-v-55f67ae0] {\r\n  width: 52px;\r\n  height: 52px;\r\n  background-color: #fff;\r\n  border-radius: 50%;\r\n  color: #fff;\r\n  font-weight: bold;\r\n  font-size: 16px;\r\n  display: flex;\r\n  align-items: center;\r\n  justify-content: center;\r\n  text-transform: uppercase;\n}\n.avatar-xs[data-v-55f67ae0] {\r\n  width: 29px;\r\n  height: 29px;\n}\n.avatar-sm[data-v-55f67ae0] {\r\n  width: 38px;\r\n  height: 38px;\n}\n.avatar-md[data-v-55f67ae0] {\r\n  width: 50px;\r\n  height: 50px;\n}\n.avatar-lg[data-v-55f67ae0] {\r\n  width: 80px;\r\n  height: 80px;\n}\n.avatar-xl[data-v-55f67ae0] {\r\n  width: 100px;\r\n  height: 100px;\n}\r\n  /* Tooltip text */\n.avatar .tooltiptext[data-v-55f67ae0], .avatar-sm .tooltiptext[data-v-55f67ae0] {\r\nvisibility: hidden;\r\nwidth: 120px;\r\nbackground-color: black;\r\ncolor: #fff;\r\ntext-align: center;\r\npadding: 5px 0;\r\nborder-radius: 6px;\r\n\r\n/* Position the tooltip text - see examples below! */\r\nposition: absolute;\r\nz-index: 1;\n}\r\n\r\n/* Show the tooltip text when you mouse over the tooltip container */\n.avatar:hover .tooltiptext[data-v-55f67ae0], .avatar-sm:hover .tooltiptext[data-v-55f67ae0]  {\r\nvisibility: visible;\n}\r\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ }),
+
+/***/ "./node_modules/laravel-mix/node_modules/css-loader/dist/cjs.js??clonedRuleSet-13.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-13.use[2]!./node_modules/sass-loader/dist/cjs.js??clonedRuleSet-13.use[3]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/e-commerce/views/products/product/ProductDetails.vue?vue&type=style&index=0&id=11a5b72e&lang=scss&scoped=true&":
+/*!*********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/css-loader/dist/cjs.js??clonedRuleSet-13.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-13.use[2]!./node_modules/sass-loader/dist/cjs.js??clonedRuleSet-13.use[3]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/e-commerce/views/products/product/ProductDetails.vue?vue&type=style&index=0&id=11a5b72e&lang=scss&scoped=true& ***!
+  \*********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../node_modules/laravel-mix/node_modules/css-loader/dist/runtime/api.js */ "./node_modules/laravel-mix/node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_laravel_mix_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_laravel_mix_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_laravel_mix_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, ".color-option[data-v-11a5b72e] {\n  cursor: pointer;\n  display: inline-flex;\n  align-items: center;\n  transition: all 0.2s ease;\n}\n.color-option:hover .color-pill-label[data-v-11a5b72e] {\n  border-color: #c12c5d;\n  background-color: #fff1f6;\n}\n.color-option:hover .color-swatch-circle[data-v-11a5b72e] {\n  border-color: #c12c5d;\n  transform: scale(1.05);\n}\n.color-option.selected .color-pill-label[data-v-11a5b72e] {\n  border-color: #c12c5d;\n  background-color: #fff1f6;\n  color: #c12c5d;\n  font-weight: 600;\n}\n.color-option.selected .color-swatch-circle[data-v-11a5b72e] {\n  border-color: #c12c5d;\n  box-shadow: 0 0 0 3px #fff1f6;\n}\n.color-pill-label[data-v-11a5b72e] {\n  display: inline-flex;\n  align-items: center;\n  padding: 8px 16px;\n  border: 2px solid #e0e0e0;\n  border-radius: 24px;\n  font-size: 13px;\n  font-weight: 500;\n  color: #333;\n  background-color: #fff;\n  transition: all 0.2s ease;\n  min-width: 44px;\n  justify-content: center;\n}\n.color-swatch-circle[data-v-11a5b72e] {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 40px;\n  height: 40px;\n  border: 2px solid #e0e0e0;\n  border-radius: 50%;\n  transition: all 0.2s ease;\n}\n.color-swatch-circle i[data-v-11a5b72e] {\n  font-size: 16px;\n  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);\n}", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -41337,6 +41331,36 @@ var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js
 
 /***/ }),
 
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/laravel-mix/node_modules/css-loader/dist/cjs.js??clonedRuleSet-13.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-13.use[2]!./node_modules/sass-loader/dist/cjs.js??clonedRuleSet-13.use[3]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/e-commerce/views/products/product/ProductDetails.vue?vue&type=style&index=0&id=11a5b72e&lang=scss&scoped=true&":
+/*!*************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/laravel-mix/node_modules/css-loader/dist/cjs.js??clonedRuleSet-13.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-13.use[2]!./node_modules/sass-loader/dist/cjs.js??clonedRuleSet-13.use[3]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/e-commerce/views/products/product/ProductDetails.vue?vue&type=style&index=0&id=11a5b72e&lang=scss&scoped=true& ***!
+  \*************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_laravel_mix_node_modules_css_loader_dist_cjs_js_clonedRuleSet_13_use_1_node_modules_vue_loader_lib_loaders_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_13_use_2_node_modules_sass_loader_dist_cjs_js_clonedRuleSet_13_use_3_node_modules_vue_loader_lib_index_js_vue_loader_options_ProductDetails_vue_vue_type_style_index_0_id_11a5b72e_lang_scss_scoped_true___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../node_modules/laravel-mix/node_modules/css-loader/dist/cjs.js??clonedRuleSet-13.use[1]!../../../../../node_modules/vue-loader/lib/loaders/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-13.use[2]!../../../../../node_modules/sass-loader/dist/cjs.js??clonedRuleSet-13.use[3]!../../../../../node_modules/vue-loader/lib/index.js??vue-loader-options!./ProductDetails.vue?vue&type=style&index=0&id=11a5b72e&lang=scss&scoped=true& */ "./node_modules/laravel-mix/node_modules/css-loader/dist/cjs.js??clonedRuleSet-13.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-13.use[2]!./node_modules/sass-loader/dist/cjs.js??clonedRuleSet-13.use[3]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/e-commerce/views/products/product/ProductDetails.vue?vue&type=style&index=0&id=11a5b72e&lang=scss&scoped=true&");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_laravel_mix_node_modules_css_loader_dist_cjs_js_clonedRuleSet_13_use_1_node_modules_vue_loader_lib_loaders_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_13_use_2_node_modules_sass_loader_dist_cjs_js_clonedRuleSet_13_use_3_node_modules_vue_loader_lib_index_js_vue_loader_options_ProductDetails_vue_vue_type_style_index_0_id_11a5b72e_lang_scss_scoped_true___WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_laravel_mix_node_modules_css_loader_dist_cjs_js_clonedRuleSet_13_use_1_node_modules_vue_loader_lib_loaders_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_13_use_2_node_modules_sass_loader_dist_cjs_js_clonedRuleSet_13_use_3_node_modules_vue_loader_lib_index_js_vue_loader_options_ProductDetails_vue_vue_type_style_index_0_id_11a5b72e_lang_scss_scoped_true___WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ }),
+
 /***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/laravel-mix/node_modules/css-loader/dist/cjs.js??clonedRuleSet-13.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-13.use[2]!./node_modules/sass-loader/dist/cjs.js??clonedRuleSet-13.use[3]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/e-commerce/views/search/LeftSideFilter.vue?vue&type=style&index=0&id=293b2288&lang=scss&scoped=true&":
 /*!***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/laravel-mix/node_modules/css-loader/dist/cjs.js??clonedRuleSet-13.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-13.use[2]!./node_modules/sass-loader/dist/cjs.js??clonedRuleSet-13.use[3]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/e-commerce/views/search/LeftSideFilter.vue?vue&type=style&index=0&id=293b2288&lang=scss&scoped=true& ***!
@@ -42614,15 +42638,17 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _ProductDetails_vue_vue_type_template_id_11a5b72e_scoped_true___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./ProductDetails.vue?vue&type=template&id=11a5b72e&scoped=true& */ "./resources/e-commerce/views/products/product/ProductDetails.vue?vue&type=template&id=11a5b72e&scoped=true&");
 /* harmony import */ var _ProductDetails_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./ProductDetails.vue?vue&type=script&lang=js& */ "./resources/e-commerce/views/products/product/ProductDetails.vue?vue&type=script&lang=js&");
-/* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! !../../../../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ "./node_modules/vue-loader/lib/runtime/componentNormalizer.js");
+/* harmony import */ var _ProductDetails_vue_vue_type_style_index_0_id_11a5b72e_lang_scss_scoped_true___WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./ProductDetails.vue?vue&type=style&index=0&id=11a5b72e&lang=scss&scoped=true& */ "./resources/e-commerce/views/products/product/ProductDetails.vue?vue&type=style&index=0&id=11a5b72e&lang=scss&scoped=true&");
+/* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! !../../../../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ "./node_modules/vue-loader/lib/runtime/componentNormalizer.js");
 
 
 
+;
 
 
 /* normalize component */
-;
-var component = (0,_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__["default"])(
+
+var component = (0,_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_3__["default"])(
   _ProductDetails_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__["default"],
   _ProductDetails_vue_vue_type_template_id_11a5b72e_scoped_true___WEBPACK_IMPORTED_MODULE_0__.render,
   _ProductDetails_vue_vue_type_template_id_11a5b72e_scoped_true___WEBPACK_IMPORTED_MODULE_0__.staticRenderFns,
@@ -44326,6 +44352,19 @@ __webpack_require__.r(__webpack_exports__);
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_laravel_mix_node_modules_css_loader_dist_cjs_js_clonedRuleSet_10_use_1_node_modules_vue_loader_lib_loaders_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_10_use_2_node_modules_vue_loader_lib_index_js_vue_loader_options_UserIcon_vue_vue_type_style_index_0_id_55f67ae0_scoped_true_lang_css___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../node_modules/style-loader/dist/cjs.js!../../../../node_modules/laravel-mix/node_modules/css-loader/dist/cjs.js??clonedRuleSet-10.use[1]!../../../../node_modules/vue-loader/lib/loaders/stylePostLoader.js!../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-10.use[2]!../../../../node_modules/vue-loader/lib/index.js??vue-loader-options!./UserIcon.vue?vue&type=style&index=0&id=55f67ae0&scoped=true&lang=css& */ "./node_modules/style-loader/dist/cjs.js!./node_modules/laravel-mix/node_modules/css-loader/dist/cjs.js??clonedRuleSet-10.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-10.use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/e-commerce/views/commons/UserIcon.vue?vue&type=style&index=0&id=55f67ae0&scoped=true&lang=css&");
+
+
+/***/ }),
+
+/***/ "./resources/e-commerce/views/products/product/ProductDetails.vue?vue&type=style&index=0&id=11a5b72e&lang=scss&scoped=true&":
+/*!**********************************************************************************************************************************!*\
+  !*** ./resources/e-commerce/views/products/product/ProductDetails.vue?vue&type=style&index=0&id=11a5b72e&lang=scss&scoped=true& ***!
+  \**********************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_laravel_mix_node_modules_css_loader_dist_cjs_js_clonedRuleSet_13_use_1_node_modules_vue_loader_lib_loaders_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_13_use_2_node_modules_sass_loader_dist_cjs_js_clonedRuleSet_13_use_3_node_modules_vue_loader_lib_index_js_vue_loader_options_ProductDetails_vue_vue_type_style_index_0_id_11a5b72e_lang_scss_scoped_true___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/laravel-mix/node_modules/css-loader/dist/cjs.js??clonedRuleSet-13.use[1]!../../../../../node_modules/vue-loader/lib/loaders/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-13.use[2]!../../../../../node_modules/sass-loader/dist/cjs.js??clonedRuleSet-13.use[3]!../../../../../node_modules/vue-loader/lib/index.js??vue-loader-options!./ProductDetails.vue?vue&type=style&index=0&id=11a5b72e&lang=scss&scoped=true& */ "./node_modules/style-loader/dist/cjs.js!./node_modules/laravel-mix/node_modules/css-loader/dist/cjs.js??clonedRuleSet-13.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-13.use[2]!./node_modules/sass-loader/dist/cjs.js??clonedRuleSet-13.use[3]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/e-commerce/views/products/product/ProductDetails.vue?vue&type=style&index=0&id=11a5b72e&lang=scss&scoped=true&");
 
 
 /***/ }),
