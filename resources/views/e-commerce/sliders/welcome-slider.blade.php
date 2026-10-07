@@ -6,23 +6,23 @@
 
       {{-- Slide 1 --}}
       {{-- Previous height: clamp(280px, 45vw, 500px) --}}
-      <div class="position-relative" style="height: clamp(220px, 32vw, 380px);">
-        <img src="{{ asset('img/Slider-1.png') }}" class="w-100 h-100 d-block" style="object-fit: cover;" alt="Rembeka slide 1">
+      <div class="position-relative">
+        <img src="{{ asset('img/Sliderone.png') }}" class="w-100 h-100 d-block" style="object-fit: cover;" alt="Rembeka slide 1">
       </div>
 
       {{-- Slide 2 --}}
-      <div class="position-relative" style="height: clamp(220px, 32vw, 380px);">
-        <img src="{{ asset('img/Slider-2.png') }}" class="w-100 h-100 d-block" style="object-fit: contain;" alt="Rembeka slide 2">
+      <div class="position-relative">
+        <img src="{{ asset('img/Slidertwo.png') }}" class="w-100 h-100 d-block" style="object-fit: contain;" alt="Rembeka slide 2">
       </div>
 
       {{-- Slide 3 --}}
-      <div class="position-relative" style="height: clamp(220px, 32vw, 380px);">
-        <img src="{{ asset('img/Slider-3.png') }}" class="w-100 h-100 d-block" style="object-fit: contain;" alt="Rembeka slide 3">
+      <div class="position-relative">
+        <img src="{{ asset('img/Sliderthree.png') }}" class="w-100 h-100 d-block" style="object-fit: contain;" alt="Rembeka slide 3">
       </div>
 
       {{-- Slide 4 --}}
-      <div class="position-relative" style="height: clamp(220px, 32vw, 380px);">
-        <img src="{{ asset('img/Slider-4.png') }}" class="w-100 h-100 d-block" style="object-fit: contain;" alt="Rembeka slide 4">
+      <div class="position-relative">
+        <img src="{{ asset('img/Sliderfour.png') }}" class="w-100 h-100 d-block" style="object-fit: contain;" alt="Rembeka slide 4">
       </div>
 
     </div>
